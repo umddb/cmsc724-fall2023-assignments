@@ -1,0 +1,27 @@
+The next questions are about this database created with the following CREATE TABLE statements.
+create table users (userid varchar(10) unique, name varchar(20), birthdate date, joined date);
+create table groups (groupid varchar(10) unique, name varchar(100));
+create table friends (userid1 varchar(10) references users(userid), userid2 varchar(10) references users(userid));
+create table follows (userid1 varchar(10) references users(userid), userid2 varchar(10) references users(userid));
+create table status (statusid varchar(10) unique, userid varchar(10) references users(userid), status_time date, text varchar(60));
+create table members (userid varchar(10) references users(userid), groupid varchar(10) references groups(groupid));
+create table likes (userid varchar(10) references users(userid), statusid varchar(10) references status(statusid));
+
+Write a single query to report all status updates for  the user 'Kevin Allen' by joining status and user on the above database schema.
+Output Column: status_time, text
+Order by: status_time increasing
+
+Write an SQL query to output the age (in years) for every user when they joined the social network.
+Output columns: name, age
+
+
+
+Write a query to find users who have been on the social network for more than half their life as of 'August 31, 2021'.
+Output columns: name
+Order by name ascending
+
+
+
+Write a single query to report all status updates for  the user 'Kevin Allen' by joining status and user.
+Output Column: status_time, text
+Order by: status_time increasing

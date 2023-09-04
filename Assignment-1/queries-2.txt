@@ -1,0 +1,633 @@
+queries = ["" for i in range(0, 25)]
+
+### 0. List all the users who were born in 1998.
+### Output column order: userid, name, birthdate, joined
+### Order by birthdate ascending
+queries[0] = """
+select userid, name, birthdate, joined
+from users
+where extract(year from birthdate) = 1998 
+order by birthdate asc;
+"""
+
+### 1. Report the user information (userid, name, birthdate, joined) for all users with first name 'Carol'. (Hint: use ``like'').
+### Output column order: userid, name, birthdate, joined
+### Order by birthdate ascending
+queries[1] = """
+select * 
+from users 
+where name like 'Carol%' 
+order by birthdate asc;
+"""
+
+
+### 2. Write a query to output the age (in years) for every user when they joined the social network.
+### Use 'age' function that operates on dates (https://www.postgresql.org/docs/12/functions-datetime.html)
+### Output columns: name, age
+### Order output by age increasing
+### The first row in the output should be: (Jason Phillips, 6)
+queries[2] = """
+select name, extract(year from age(joined, birthdate)) as age
+from users 
+order by age asc;
+"""
+
+### 3. Select all the "distinct" years that users with names starting with 'M' are born in.
+### Output column: year
+### Order output by year ascending
+queries[3] = """
+select distinct extract(year from birthdate) as year 
+from users
+where name like 'M%'
+order by year asc;
+"""
+
+Write a query to find users who have been on the social network for more than half their life as of 'August 31, 2021'.
+Output columns: name
+Order by name ascending
+queries[4] = """
+select name
+from users
+where age(timestamp '2021-08-31', joined) >= age(joined, birthdate)
+order by name asc;
+"""
+
+Write a single query to report all status updates for  the user 'Kevin Allen' by joining status and user.
+Output Column: status_time, text
+Order by: status_time increasing
+queries[5] = """
+select status_time, text
+from status, users
+where status.userid = users.userid and users.name = 'Kevin Allen'
+order by status_time asc;
+"""
+
+Write a query to find all users who satisfy one of the following conditions:
+        - the user's name starts with a 'J' and they were born before and including 1980
+        - the user's name starts with an 'M' and they were born after 1980 (excluding 1980)
+ Output columns: name, birthdate
+ Order by: name ascending
+queries[6] = """
+select name, birthdate
+from users
+where (name like 'J%' and extract(year from birthdate) <= 1980) or 
+      (name like 'M%' and extract(year from birthdate) > 1980)
+order by name asc;
+"""
+
+
+### 7. Count the number of the friends of the user 'Kevin Allen'.
+### Output columns: num_friends
+queries[7] = """
+select count(*) as num_friends
+from users u, friends f
+where u.name = 'Kevin Allen' and u.userid = f.userid1;
+"""
+
+### 8. Count the total number of users whose names start with a vowel ('A', 'E', 'I', 'O', 'U'). (Hint: Use "in" and "substr").
+### Output columns: numusers
+queries[8] = """
+select count(*) 
+from users 
+where substr(name, 1, 1) in  ('A', 'E', 'O', 'I', 'U');
+"""
+
+
+SQL "with" clause can be used to simplify queries. It essentially allows
+specifying temporary tables to be used during the rest of the query. See Section
+3.8.6 (6th Edition) for some examples.
+
+Write a query to find the name(s) of the user(s) with the largest number of friends. We have provided
+a part of the query to build a temporary table.
+
+Output columns: name, num_friends 
+Order by name ascending (there may be more than one answer)
+queries[9] = """
+with temp as (
+        select name, count(*) as num_friends 
+        from users, friends 
+        where users.userid = friends.userid1 
+        group by name)
+select name, num_friends
+from temp 
+where num_friends = (select max(num_friends) from temp)
+order by name;
+"""
+
+
+
+10. List the names of the users who posted no status updates. Hint: Use "not in".
+Output Columns: name
+Order by name ascending
+queries[10] = """
+select name
+from users
+where userid not in (
+        select userid 
+        from status)
+order by name;
+"""
+
+
+Write a query to output a list of users and their friends, such that the friend has an
+upcoming birthday within next 15 days.  Assume today is Sept 10, 2021
+(so look for birthdays between Sept 11 and Sept 25, both inclusive). You can hardcode
+that if you'd like.
+Output: username, friendname, friendbirthdate
+Order by: username, friendname ascending
+queries[11] = """
+select u1.name as username, u2.name as friendname, u2.birthdate as friendbirthdate
+from users u1, friends f, users u2
+where u1.userid = f.userid1 and f.userid2 = u2.userid 
+      and extract(month from u2.birthdate) = 9 
+      and extract(day from u2.birthdate) between 11 and 25
+order by username, friendname asc;
+"""
+
+
+For each user who has posted at least two status updates, count the
+average amount of time between his or her status updates in seconds.
+Order the results in the increasing order by the userid.
+
+Output columns: userid, gapseconds
+Order by: userid
+
+### Hint: Date substraction returns the amount in (fractional) number of days. 
+### Hint 2: The number of seconds in a day is 86400.
+### Hint 3: Use "having" to find users who have at least 2 status updates.
+###
+queries[12] = """
+select userid, (max(status_time) - min(status_time))*86400/(count(*) - 1)
+from status
+group by userid
+having count(*) > 1
+order by userid;
+"""
+
+
+### 13. Generate a list - (birthyear, num-users) - containing the years
+### in which the users in the database were born, and the number of users
+### born in each year.
+###
+### You don't need to worry about years where no users were born, i.e., there should
+### not be any entries for years where no one in the database was born.
+###
+### Output columns: birthyear, num_users
+### Order by birthyear
+queries[13] = """
+select extract(year from birthdate) as birthyear, count(*) as num_users
+from users
+group by extract(year from birthdate)
+order by birthyear;
+"""
+
+Generate a list - (birthyear, num-users) - containing the years
+in which the users in the database were born, and the number of users
+born in each year.
+
+However, your output here should have all years between 1940 and 2000 both inclusive, 
+with 0 counts if no users were born that year
+
+Do this for PostgreSQL syntax.
+
+Output columns: birthyear, num_users
+Order by birthyear
+
+### HINT: Use "generate_series()" to create an inline table -- try 
+### "select * from generate_series(1, 10) as g(n);" to see how it works.
+### This is what's called a "set returning function", and the result can be used as a relation.
+### See: https://www.postgresql.org/docs/12/functions-srf.html
+###
+queries[14] = """
+select birthyear, (select count(*) from users where extract(year from birthdate) = birthyear) as num_users
+from generate_series(1940, 2000) as g(birthyear)
+order by birthyear;
+"""
+
+### 15. Find the name of the group with the maximum number of members. There may be more than one answer.
+###
+### Output: name, num_members
+### Order by name ascending
+queries[15] = """
+with temp as (
+        select groups.groupid, name, count(userid) as num_members
+        from groups, members
+        where groups.groupid = members.groupid 
+        group by groups.groupid, name
+) 
+select name, num_members
+from temp
+where num_members = (select max(num_members) from temp)
+order by name;
+"""
+
+Write a query to find the names of all users that "Michael Smith" is friends with or follows.
+The output should be a list of names, with a second column that takes values: "friends", or "follows"
+Some names might appear twice
+
+### HINT: Use "union"
+### HINT 2: Note that constants can be hardcoded in the select cause (e.g., try "select userid, 'hi' from users;")
+###
+### Output columns: name, type -- type takes values "friends" or "follows"
+queries[16] = """
+(
+select u2.name, 'friends'
+from friends f, users u1, users u2
+where u1.name = 'Michael Smith' and u1.userid = f.userid1 and f.userid2 = u2.userid
+union
+select u2.name, 'follows'
+from follows f, users u1, users u2
+where u1.name = 'Michael Smith' and u1.userid = f.userid1 and f.userid2 = u2.userid
+)
+order by name;
+"""
+
+
+### 17. Write a query to count for each user, the number of other users that they are both friends with and follow.
+###
+### HINT: Use "intersection" on "friends" and "follows" as a starting point.
+###
+### Output columns: userid, name, num_common
+### Order by name ascending
+queries[17] = """
+with temp as (
+        select * from friends
+        intersect
+        select * from follows)
+select u.userid, u.name, count(*) as num_common
+from temp, users u
+where temp.userid1 = u.userid
+group by u.userid, u.name
+order by u.name asc;
+"""
+
+18. Find the pairs of users that were born closest to each other (there are no two users with the
+same birthdate). There may be multiple answers.
+
+For any pair, the output should only contain one row such that username1 < username2
+
+Output columns: username1, username2 
+Order by: username1
+queries[18] = """
+with temp as (
+        select u1.name name1, u2.name name2, u1.birthdate - u2.birthdate as diff
+        from users u1, users u2
+        where u1.name < u2.name 
+) 
+select name1, name2
+from temp
+where abs(diff) = (select min(abs(diff)) from temp)
+order by name1;
+"""
+
+For each user, calculate the number of friends and the number of followers.
+Note that a user with no friends will not appear in the friends table, and same
+goes for follows table. But 0 counts should still be appropriately recorded.
+
+Output columns: userid, name, num_friends, num_followers
+Order by: userid
+queries[19] = """
+select userid, name, 
+       (select count(*) from friends f where f.userid1 = u.userid) as num_friends, 
+       (select count(*) from follows f where f.userid2 = u.userid) as num_followers 
+from users u
+order by userid;
+"""
+
+
+Find all users who are not followed by anyone who is a member of the group: 
+'University of Maryland, College Park USA'
+You can hard code the group id: 'group36'
+
+HINT: Use Set Operation "Not Exists"
+
+Output column order: name
+Order by name ascending
+queries[20] = """
+select name
+from users u
+where not exists (
+        select userid1
+        from follows
+        where userid2 = u.userid
+        intersect
+        select u2.userid
+        from users u2, members m
+        where u2.userid = m.userid and m.groupid = 'group36'
+        )
+order by u.name;
+"""
+
+
+### 21. Create a copy of the "users" table using the following command:
+### select * into userscopy from users, OR
+### create table userscopy as (select * from users)
+###
+### For the next few questions, we will use this duplicated table
+###
+### Write a single query/statement to add two new columns to the "users" table -- age (integer), and usage (varchar(10)).
+queries[21] = """
+alter table userscopy add age integer, add usage varchar(10);
+"""
+
+### 22. Write a single query/statement to set the values of both of the new columns. Use "age()" function to find the 
+### age in years (as we did above) as of "August 31, 2021". 
+###
+### The "usage" column takes three values: "heavy", "medium", "light"
+### The usage is "heavy" if the total number of status updates > 10, "medium" if 5 <= # status updates <= 10, and "light" if < 5.
+###
+### HINT: Use a "with" clause to create a temporary table with the counts, and use CASE to simplify the update.
+###
+### NOTE: You need to account for users with no status updates in 'status' table
+queries[22] = """
+with temp as (
+        select userid, (select count(*) as num_status from status where status.userid = userscopy.userid)
+        from userscopy
+)
+update userscopy
+set age = extract(year from age(timestamp '2021-08-31', birthdate)),
+    usage = case 
+        when t.num_status > 10 then 'heavy'
+        when t.num_status between 5 and 10 then 'medium'
+        else 'light'
+    end
+from temp t
+where t.userid = userscopy.userid;
+"""
+
+
+### 23. Write a query "delete" all users from userscopy who were born in May.
+queries[23] = """
+delete from userscopy
+where extract(month from birthdate) = 5;
+"""
+
+
+### 24. Use "generate_series" as above to write a single statement to insert 10 new tuples
+### to 'userscopy' of the form:
+### ('newuser11', 'New User 11', '1990-01-11', '2015-01-11', 0, 'light')
+### ('newuser12', 'New User 12', '1990-01-12', '2015-01-12', 0, 'light')
+### ...
+### ('newuser20', 'New User 20', '1990-01-20', '2015-01-20', 0, 'light')
+###
+### HINT: Use concatenation operator: 'newuser' || 0, and addition on dates to simplify.
+queries[24] = """
+insert into userscopy 
+select 'newuser' || x, 'New User ' || x, to_date('1990-01-00', 'yyyy-mm-dd') + x - 1,
+    to_date('2015-01-00', 'yyyy-mm-dd') + x -1, 0, 'light'
+from generate_series(11, 20) as g(x);
+"""
+
+
+================================
+
+
+
+queries = ["" for i in range(0, 9)]
+
+### 0. List all the users who were born in 1998.
+### Output column order: userid, name, birthdate, joined
+### Order by birthdate ascending
+queries[0] = """
+select userid, name, birthdate, joined
+from users
+where extract(year from birthdate) = 1998 
+order by birthdate asc;
+"""
+
+Write a single query to rank the "groups" by the number of members, with the group 
+with the highest number of members getting rank 1. 
+If there are ties, the two (or more) groups should get the same "rank", and next ranks 
+should be skipped.
+
+Write this for PostgreSQL.
+
+
+###
+### HINT: Use a WITH clause to create a temporary table (temp(groupname, num_members) 
+### followed by the appropriate "RANK"
+### construct -- PostgreSQL has several different
+### See: https://www.eversql.com/rank-vs-dense_rank-vs-row_number-in-postgresql/, for some
+### examples.
+### PostgreSQL documentation has a more succinct discussion: https://www.postgresql.org/docs/current/functions-window.html
+###
+### Output Columns: groupname, rank
+### Order by: rank, groupname ascending
+queries[1] = """
+with temp as
+    (select name as groupname, count(*) as num_members
+     from groups join members on groups.groupid = members.groupid
+     group by groupname
+    )
+select groupname, rank() over (order by num_members desc) as rank
+from temp
+order by rank, groupname;
+"""
+
+Use window functions to construct a query to associate the average number
+followers for each "joined" year, with each user.
+
+Write this for PostgreSQL.
+
+###
+### See here for a tutorial on window functions: https://www.postgresql.org/docs/current/tutorial-window.html
+###
+### We have created a table using WITH for you: temp(userid, name, joinedyear, num_followers)
+### Our goal is to create a new table with columns: (userid, name, joinedyear, num_followers, avg_num_followers_for_that_year)
+### Here: avg_num_followers_for_that_year is basically the average number of followers across
+### all users who joined in that year
+###
+### This kind of an output table will allow us to compare each user with the other users 
+### who joined in that same year (e.g., to understand whether popularity is correlated with how
+### long the user has been on the social network)
+### Order by: joined_year first, and then userid
+queries[2] = """
+with temp as (
+        select userid, name, extract(year from joined) as joined_year, 
+               (select count(*) from follows where follows.userid2 = users.userid) as num_followers
+        from users
+        )
+select userid, name, joined_year, num_followers, avg(num_followers) over (partition by joined_year) as avg_num_followers_for_that_year
+from temp
+order by joined_year, userid;
+"""
+
+### 3. Similar to the above, but here the goal is to create the following table:
+###
+### Output columns: (userid, name, num_status_updates, num_followers, avg_num_followers_for_that_status_update, rank by num_followers within users with the same num_status_updates)
+###
+### As above, use WITH to create a temp table with columns: (userid, name, num_status_updates, num_followers), and then use two WINDOW functions, one for average and one for RANK.
+###
+### Order by: num_status_updates, rank, userid
+###
+### First few rows of the result look like this:
+### The "rank" here would be the rank within the counties for that state.
+### user134 | Ronald Miller       |                  0 |            15 |                       8.3750000000000000 |    1
+### user12  | Carol Lopez         |                  0 |            12 |                       8.3750000000000000 |    2
+### user54  | Helen Lee           |                  0 |            11 |                       8.3750000000000000 |    3
+
+queries[3] = """
+with temp as (
+        select userid, name, 
+               (select count(*) from status where status.userid = users.userid) as num_status_updates,
+               (select count(*) from follows where follows.userid2 = users.userid) as num_followers
+        from users 
+        )
+select userid, name, num_status_updates, num_followers, 
+       avg(num_followers) over (partition by num_status_updates) as avg_num_followers_for_that_status_update, 
+       rank() over (partition by num_status_updates order by num_followers desc) as rank 
+from temp
+order by num_status_updates, rank, userid;
+"""
+
+
+Write a function that takes in a userid as input, and returns the number of friends for
+that user.
+
+Function signature: num_friends(in varchar, out num_friends bigint)
+###
+### There are several examples here at the bottom: https://www.postgresql.org/docs/10/sql-createfunction.html
+### You should be writing one that uses SQL, i.e., has "LANGUAGE SQL" at the end.
+### 
+### So calling num_friends('user0') should return 21. Make sure your function returns 0
+### appropriately (for users who do not have any friends).
+### 
+### Confirm that the query below works after the function is created:
+###             select userid, name, num_friends(userid) from users
+###
+queries[4] = """
+CREATE OR REPLACE FUNCTION num_friends(in varchar, out num_friends bigint) 
+AS $$
+select count(*) from users u join friends f on (u.userid = f.userid1) where u.userid = $1;
+$$
+LANGUAGE SQL;
+"""
+
+Write a PostgreSQL function that takes in an userid as input, and returns a JSON string with 
+the details of friends and followers of that user.
+
+So SQL query: select user_details('user0');
+should return a single tuple with a single attribute of type string/varchar as:
+{ "userid": "user0", "name": "Anthony Roberts", "friends": [{"name": "Anthony Taylor"}, {"name": "Betty Garcia"}, {"name": "Betty Hernandez"}, {"name": "Betty Lewis"}, {"name": "Betty Lopez"}, {"name": "Betty Parker"}, {"name": "Betty Thomas"}, {"name": "Brian Jackson"}, {"name": "Brian King"}, {"name": "Brian Robinson"}, {"name": "Daniel Lewis"}, {"n ame": "Deborah Turner"}, {"name": "Donald Adams"}, {"name": "Donald Thompson"}, {"name": "Donald Walker"}, {"name": "Dorothy Gonzalez"}, {"name": "James Mitchell"}, {"name": "Ja son Phillips"}, {"name": "Jeff White"}, {"name": "Kevin Allen"}, {"name": "Kimberly Allen"}], "follows": [{"name": "Betty Thomas"}, {"name": "David Anderson"}, {"name": "Edward Green"}, {"name": "Elizabeth Jones"}, {"name": "Nancy Gonzalez"}, {"name": "Richard Perez"}, {"name": "Ronald Garcia"}]}
+
+Within "friends" and "follows", the entries should be ordered by name.
+
+You should use PL/pgSQL for this purpose -- writing this purely in SQL is somewhat cumbersome.
+i.e., your function should have LANGUAGE plpgsql at the end.
+
+Function signature: user_details(in varchar, out details_json varchar)
+
+### HINT: Use "string_agg" aggregate functions for creating the two lists properly: https://www.postgresqltutorial.com/postgresql-aggregate-functions/postgresql-string_agg-function/
+### Use "CONCAT()" function for concatenating (or you can use ||).
+###
+### BE CAREFUL WITH WHITE SPACES -- we will remove any spaces before comparing answers, but there is
+### still a possibility that you fail comparisons because of that.
+queries[5] = """
+CREATE OR REPLACE FUNCTION user_details(in varchar, out details_json varchar)
+AS $$
+declare 
+    username varchar;
+    friendslist varchar;
+    followslist varchar;
+begin
+    select max(name) into username from users where userid = $1;
+    select string_agg('{"name": "' || name || '"}', ', ' order by name) into friendslist 
+        from users u, friends f where u.userid = f.userid2 and f.userid1 = $1;
+    select string_agg('{"name": "' || name || '"}', ', ' order by name) into followslist 
+        from users u, follows f where u.userid = f.userid1 and f.userid2 = $1;
+
+    details_json = concat('{ "userid": "', $1, '", ', '"name": "', username, '", "friends": [',
+            friendslist, '], "follows": [', followslist, ']}');
+    return;
+end;
+$$
+LANGUAGE plpgsql;
+"""
+
+Create a new table using:
+         create table influencers as
+             select u.userid, u.name, count(userid1) as num_followers
+             from users u join follows f on (u.userid = f.userid2)
+             group by u.userid, u.name
+             having count(userid1) > 10;
+
+Create a new trigger that: 
+         When a tuple is inserted in the follows relation, appropriately modifies influencers.
+         Specifically:
+             If the userid2 for the new follows tuple is already present in influencers,
+                 then the num_followers should be increased appropriately.
+             If the userid2 for the new follows tuple is NOT present in influencers, 
+                 then it should check whether the addition of the new follower makes the user
+                 an influencer, and add the entry to influencers table.
+
+As per PostgreSQL syntax, you have to write two different statements -- queries[6] should be the CREATE FUNCTION statement, 
+and queries[7] should be the CREATE TRIGGER statement.
+
+###  We have provided some partial syntax.
+###
+### You can find several examples of how to write triggers at: https://www.postgresql.org/docs/10/sql-createtrigger.html, and a full example here: https://www.tutorialspoint.com/postgresql/postgresql_triggers.htm
+queries[6] = """
+CREATE OR REPLACE FUNCTION update_influencers_on_insert()
+    RETURNS TRIGGER
+    LANGUAGE PLPGSQL
+    AS
+    $$
+    declare 
+        cnt integer;
+        username varchar;
+    BEGIN
+        select count(*) into cnt from follows where userid2 = NEW.userid2;
+        select max(name) into username from users where userid = NEW.userid2;
+        IF cnt = 11 THEN
+            insert into influencers values (NEW.userid2, username, cnt);
+        ELSIF cnt > 11 THEN
+            update influencers set num_followers = cnt where userid = NEW.userid2;
+        END IF;
+        RETURN NEW;
+    END
+    $$;
+"""
+
+queries[7] = """
+CREATE TRIGGER update_influencers_on_insert
+AFTER INSERT
+ON follows
+FOR EACH ROW
+EXECUTE PROCEDURE update_influencers_on_insert();
+"""
+
+
+Recursion can be used in our database to find all users a user is connected with through
+others (i.e., friends of friends, friends of friends of friends, etc).
+
+However, our friends table has so much connectivity that the result is somewhat meaningless
+(everyone is connected to everyone). 
+
+Hence, we will use a smaller friends table for this query.
+Use the following query to create a smaller friends table:
+       select f.userid1, f.userid2 into friends_small from friends f, users u1, users u2 where f.userid1 = u1.userid and f.userid2 = u2.userid and abs(extract(year from u1.birthdate) - extract(year from u2.birthdate)) < 5;
+
+Complete the below partial query to find all the other users that they are
+connected to through other users through the "friends_small" table.
+
+Make sure you don't list a user as their own friend.
+
+There should be 1972 rows in the output.
+
+Output columns: name1, userid1, name2, userid2
+Output order: name1, name2
+queries[8] = """
+with recursive temp(name1, userid1, name2, userid2) as 
+(select u1.name as name1, u1.userid as userid1, u2.name as name2, u2.userid as userid2
+ from users u1, users u2, friends_small f
+ where u1.userid = f.userid1 and f.userid2 = u2.userid
+ union
+ select t.name1, t.userid1, u2.name as name2, u2.userid as userid2
+ from temp t, friends_small f, users u2
+ where t.userid2 = f.userid1 and f.userid2 = u2.userid
+ )
+select *
+from temp
+where userid1 != userid2
+order by name1, name2;
+"""
