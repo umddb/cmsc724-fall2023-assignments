@@ -20,11 +20,12 @@ PostgreSQL, MongoDB, and Apache Spark pre-loaded.
     - On your host machine, you should be able to visit the URL directly (we did the port mapping above when running Docker).
     - As soon as you exit the Docker container, the machine will shut down -- so only changes you have made in the /data directory will persist.
 
-1. For MongoDB, following needs to be done after loading (I haven't been able to figure out how to do these in Dockerfile itself).
+1. For MongoDB, following needs to be done after loading:
     - Start the MongoDB server: `systemctl start mongod.service`
-    - Load customers (run from `/data`): `mongoimport --db "analytics" --collection "customers" /data/Assignment-2/sample_analytics/customers.json`
-    - Load accounts: `mongoimport --db "analytics" --collection "accounts" /data/Assignment-2/sample_analytics/accounts.json`
-    - Load transactions: `mongoimport --db "analytics" --collection "transactions" /data/Assignment-2/sample_analytics/transactions.json`
+    - The following should be done if the collections are empty, but they should be loaded fine in the docker image already.
+       - Load customers (run from `/data`): `mongoimport --db "analytics" --collection "customers" /data/Assignment-2/sample_analytics/customers.json`
+       - Load accounts: `mongoimport --db "analytics" --collection "accounts" /data/Assignment-2/sample_analytics/accounts.json`
+       - Load transactions: `mongoimport --db "analytics" --collection "transactions" /data/Assignment-2/sample_analytics/transactions.json`
 
 1. For Spark, see the instructions in `Assignment-3` README file for setup.
 

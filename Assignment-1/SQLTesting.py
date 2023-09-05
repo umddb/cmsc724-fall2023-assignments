@@ -15,7 +15,7 @@ args = parser.parse_args()
 
 interactive = args.interactive
 
-conn = psycopg2.connect("dbname=socialnetwork user=postgres")
+conn = psycopg2.connect("dbname=socialnetwork user=root")
 cur = conn.cursor()
 
 cur.execute("drop table if exists userscopy;")
